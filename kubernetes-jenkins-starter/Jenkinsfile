@@ -1,0 +1,91 @@
+
+pipeline {
+    agent any
+
+    environment {
+        KUBECTL_PATH = 'C:\\Users\\harsh\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Source code is obtained from GitHub.'
+            }
+        }
+
+        stage('Check Kubernetes Context') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'kubeconfig-file',
+                        variable: 'KUBECONFIG_FILE'
+                    )
+                ]) {
+                    bat '''
+                        set "PATH=%KUBECTL_PATH%;%PATH%"
+                        kubectl --kubeconfig="%KUBECONFIG_FILE%" config current-context
+                    '''
+                }
+            }
+        }
+
+        stage('Verify Kubernetes Connection') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'kubeconfig-file',
+                        variable: 'KUBECONFIG_FILE'
+                    )
+                ]) {
+                    bat '''
+                        set "PATH=%KUBECTL_PATH%;%PATH%"
+                        kubectl --kubeconfig="%KUBECONFIG_FILE%" cluster-info
+                    '''
+                }
+            }
+        }
+
+        stage('Check Kubernetes Nodes') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'kubeconfig-file',
+                        variable: 'KUBECONFIG_FILE'
+                    )
+                ]) {
+                    bat '''
+                        set "PATH=%KUBECTL_PATH%;%PATH%"
+                        kubectl --kubeconfig="%KUBECONFIG_FILE%" get nodes
+                    '''
+                }
+            }
+        }
+
+        stage('Check Namespaces') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'kubeconfig-file',
+                        variable: 'KUBECONFIG_FILE'
+                    )
+                ]) {
+                    bat '''
+                        set "PATH=%KUBECTL_PATH%;%PATH%"
+                        kubectl --kubeconfig="%KUBECONFIG_FILE%" get namespaces
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'SUCCESS: Jenkins connected to Kubernetes!'
+        }
+
+        failure {
+            echo 'FAILED: Check the Kubernetes configuration and Jenkins permissions.'
+        }
+    }
+}
+
